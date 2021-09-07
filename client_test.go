@@ -11,6 +11,10 @@ const (
 )
 
 func newAliyunOss(t *testing.T) *RestOssClient {
+	endpint, err := GetAccessEndpoint()
+	if err != nil {
+		t.Fatal(err)
+	}
 	key, err := GetAccessKeyID()
 	if err != nil {
 		t.Fatal(err)
@@ -20,7 +24,7 @@ func newAliyunOss(t *testing.T) *RestOssClient {
 		t.Fatal(err)
 	}
 	opt := &Option{
-		EndPoint:        "oss-cn-hangzhou.aliyuncs.com",
+		EndPoint:        endpint,
 		AccessKeyID:     key,
 		AccessKeySecret: sec,
 		Context:         context.Background(),
