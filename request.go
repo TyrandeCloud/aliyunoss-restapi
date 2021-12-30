@@ -246,11 +246,10 @@ func glogBody(prefix string, body []byte) {
 	}
 }
 
-func (r *Request) List() (oss.ListObjectsResult, error) {
+func (r *Request) List(opts ...oss.Option) (oss.ListObjectsResult, error) {
 	if r.err != nil {
 		return oss.ListObjectsResult{}, r.err
 	}
-	opts := make([]oss.Option, 0)
 	if r.namespaceSet {
 		opts = append(opts, oss.Prefix(r.namespace))
 	}
