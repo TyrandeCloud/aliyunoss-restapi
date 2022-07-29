@@ -280,3 +280,10 @@ func (r *Request) Delete() error {
 	}
 	return r.c.DeleteObject(r.bucketName, r.FullRootPath())
 }
+
+func (r *Request) ForceDelete(key string) error {
+	if r.err != nil {
+		return r.err
+	}
+	return r.c.DeleteObject(r.bucketName, key)
+}
