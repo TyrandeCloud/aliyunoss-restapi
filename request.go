@@ -5,7 +5,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"net/http"
+	"os"
 	"path"
 	"time"
 
@@ -20,6 +21,11 @@ const (
 
 	defaultNamespace = "default"
 	defaultChannel   = "channel"
+)
+
+const (
+	ModelNative = false
+	ModelProxy  = true
 )
 
 func NewRequest(c *RestOssClient) *Request {
@@ -59,6 +65,20 @@ type Request struct {
 	// output
 	err  error
 	body io.Reader
+
+	// model
+	isProxy bool
+	// Only when the isProxy is ModelProxy, then opt should be set.
+	// Otherwise, there is no need to specify it.
+	opt Option
+}
+
+func (r *Request) SetModel(bo bool) {
+	r.isProxy = bo
+}
+
+func (r *Request) SetOption(opt Option) {
+	r.opt = opt
 }
 
 // Verb sets the verb this request will use.
@@ -194,7 +214,7 @@ func (r *Request) Body(obj interface{}) *Request {
 	}
 	switch t := obj.(type) {
 	case string:
-		data, err := ioutil.ReadFile(t)
+		data, err := os.ReadFile(t)
 		if err != nil {
 			r.err = err
 			return r
@@ -253,7 +273,12 @@ func (r *Request) List(opts ...oss.Option) (oss.ListObjectsResult, error) {
 	if r.namespaceSet {
 		opts = append(opts, oss.Prefix(r.namespace))
 	}
-	return r.c.ListObjects(r.bucketName, opts...)
+	switch r.isProxy {
+	case ModelNative:
+		return r.c.ListObjects(r.bucketName, opts...)
+	case ModelProxy:
+	}
+	return oss.ListObjectsResult{}, fmt.Errorf("invalid list")
 }
 
 func (r *Request) FullRootPath() string {
@@ -264,26 +289,75 @@ func (r *Request) Upload() error {
 	if r.err != nil {
 		return r.err
 	}
-	return r.c.PutObject(r.bucketName, r.FullRootPath(), r.body)
+	switch r.isProxy {
+	case ModelNative:
+		return r.c.PutObject(r.bucketName, r.FullRootPath(), r.body)
+	case ModelProxy:
+		params := &ProxyRequestParams{
+			AccessEndpoint:  r.opt.EndPoint,
+			AccessKeyID:     r.opt.AccessKeyID,
+			AccessKeySecret: r.opt.AccessKeySecret,
+			BucketName:      r.bucketName,
+			Namespace:       r.namespace,
+			Channel:         r.channel,
+			Filename:        r.resource,
+		}
+		resp, err := http.NewRequest("GET", fmt.Sprintf("%s/get?%s", r.opt.BaseUrl, params.ToUrlParams()), r.body)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		return nil
+	}
+	return fmt.Errorf("invalid Upload")
 }
 
 func (r *Request) Download() (io.ReadCloser, error) {
 	if r.err != nil {
 		return nil, r.err
 	}
-	return r.c.GetObject(r.bucketName, r.FullRootPath())
+	switch r.isProxy {
+	case ModelNative:
+		return r.c.GetObject(r.bucketName, r.FullRootPath())
+	case ModelProxy:
+		params := &ProxyRequestParams{
+			AccessEndpoint:  r.opt.EndPoint,
+			AccessKeyID:     r.opt.AccessKeyID,
+			AccessKeySecret: r.opt.AccessKeySecret,
+			BucketName:      r.bucketName,
+			Namespace:       r.namespace,
+			Channel:         r.channel,
+			Filename:        r.resource,
+		}
+		resp, err := http.NewRequest("GET", fmt.Sprintf("%s/upload?%s", r.opt.BaseUrl, params.ToUrlParams()), r.body)
+		if err != nil {
+			return nil, err
+		}
+		return resp.Body, nil
+	}
+	return nil, fmt.Errorf("invalid Download")
 }
 
 func (r *Request) Delete() error {
 	if r.err != nil {
 		return r.err
 	}
-	return r.c.DeleteObject(r.bucketName, r.FullRootPath())
+	switch r.isProxy {
+	case ModelNative:
+		return r.c.DeleteObject(r.bucketName, r.FullRootPath())
+	case ModelProxy:
+	}
+	return fmt.Errorf("invalid Delete")
 }
 
 func (r *Request) ForceDelete(key string) error {
 	if r.err != nil {
 		return r.err
 	}
-	return r.c.DeleteObject(r.bucketName, key)
+	switch r.isProxy {
+	case ModelNative:
+		return r.c.DeleteObject(r.bucketName, key)
+	case ModelProxy:
+	}
+	return fmt.Errorf("invalid ForceDelete")
 }

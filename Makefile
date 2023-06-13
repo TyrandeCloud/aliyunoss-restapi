@@ -3,3 +3,6 @@
 mod:
 	go mod download
 	go mod tidy
+
+run:
+	go run ./test/main.go

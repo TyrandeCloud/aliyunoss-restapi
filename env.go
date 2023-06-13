@@ -9,6 +9,7 @@ const (
 	AccessEndpoint  = "ALIYUNOSS_ACCESS_ENDPOINT"
 	AccessKeyID     = "ALIYUNOSS_ACCESS_KEY_ID"
 	AccessKeySecret = "ALIYUNOSS_ACCESS_SECRET"
+	CustomProxy     = "ALIYUNOSS_CUSTOM_PROXY"
 )
 
 var (
@@ -39,4 +40,8 @@ func GetAccessKeySecret() (string, error) {
 		return "", ErrNoAccessKeySecret
 	}
 	return s, nil
+}
+
+func GetCustomProxy() string {
+	return os.Getenv(CustomProxy)
 }
