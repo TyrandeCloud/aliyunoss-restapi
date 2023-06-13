@@ -36,6 +36,8 @@ func NewRequest(c *RestOssClient) *Request {
 
 		namespace: defaultNamespace,
 		channel:   defaultChannel,
+
+		isProxy: ModelNative,
 	}
 }
 

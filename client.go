@@ -78,7 +78,12 @@ func (a *RestOssClient) DeleteObject(bucketName, objectKey string) error {
 }
 
 func (a *RestOssClient) Verb(verb string) *Request {
-	return NewRequest(a).Verb(verb)
+	r := NewRequest(a).Verb(verb)
+	if a.option.BaseUrl != "" {
+		r.SetModel(ModelProxy)
+		r.SetOption(r.opt)
+	}
+	return r
 }
 
 // Post begins a POST request. Short for a.Verb("POST").
