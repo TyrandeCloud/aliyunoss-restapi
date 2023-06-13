@@ -5,4 +5,4 @@ mod:
 	go mod tidy
 
 run:
-	go run ./test/main.go
+	go run ./test/main.go -listenPort=8085
