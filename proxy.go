@@ -55,7 +55,7 @@ func (p *Proxy) registerRouter(router *gin.Engine) {
 	router.GET(routerUpload, p.upload)
 }
 
-func (p *Proxy) checkRequest(req *ProxyRequest) error {
+func (p *Proxy) checkRequest(req *ProxyRequestParams) error {
 	if req.AccessEndpoint == "" {
 		return fmt.Errorf("empty AccessEndpoint")
 	}
@@ -78,7 +78,7 @@ func (p *Proxy) checkRequest(req *ProxyRequest) error {
 }
 
 func (p *Proxy) get(c *gin.Context) {
-	req := &ProxyRequest{}
+	req := &ProxyRequestParams{}
 	if err := c.ShouldBind(req); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
@@ -109,7 +109,7 @@ func (p *Proxy) get(c *gin.Context) {
 }
 
 func (p *Proxy) upload(c *gin.Context) {
-	req := &ProxyRequest{}
+	req := &ProxyRequestParams{}
 	if err := c.ShouldBind(req); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
