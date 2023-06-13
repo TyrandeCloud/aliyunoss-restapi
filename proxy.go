@@ -52,7 +52,7 @@ const (
 
 func (p *Proxy) registerRouter(router *gin.Engine) {
 	router.GET(routerGet, p.get)
-	router.GET(routerUpload, p.upload)
+	router.POST(routerUpload, p.upload)
 }
 
 func (p *Proxy) checkRequest(req *ProxyRequestParams) error {
@@ -79,11 +79,15 @@ func (p *Proxy) checkRequest(req *ProxyRequestParams) error {
 
 func (p *Proxy) get(c *gin.Context) {
 	req := &ProxyRequestParams{}
-	if err := c.ShouldBind(req); err != nil {
+	if err := c.ShouldBindQuery(req); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
+		zaplogger.Sugar().Error(err)
+		return
 	}
 	if err := p.checkRequest(req); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
+		zaplogger.Sugar().Error(err)
+		return
 	}
 	restClient, err := NewRestClient(&Option{
 		EndPoint:        req.AccessEndpoint,
@@ -110,11 +114,15 @@ func (p *Proxy) get(c *gin.Context) {
 
 func (p *Proxy) upload(c *gin.Context) {
 	req := &ProxyRequestParams{}
-	if err := c.ShouldBind(req); err != nil {
+	if err := c.ShouldBindQuery(req); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
+		zaplogger.Sugar().Error(err)
+		return
 	}
 	if err := p.checkRequest(req); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
+		zaplogger.Sugar().Error(err)
+		return
 	}
 	restClient, err := NewRestClient(&Option{
 		EndPoint:        req.AccessEndpoint,
@@ -125,8 +133,15 @@ func (p *Proxy) upload(c *gin.Context) {
 	if err != nil {
 		zaplogger.Sugar().Error(err)
 		c.AbortWithStatus(http.StatusBadRequest)
+		return
 	}
-	if err := restClient.Get().Bucket(req.BucketName).Namespace(req.Namespace).Channel(req.Channel).Name(req.Filename).Body(c.Request.Body).Upload(); err != nil {
+	data, err := c.GetRawData()
+	if err != nil {
+		zaplogger.Sugar().Error(err)
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	if err := restClient.Get().Bucket(req.BucketName).Namespace(req.Namespace).Channel(req.Channel).Name(req.Filename).Body(data).Upload(); err != nil {
 		zaplogger.Sugar().Error(err)
 		c.AbortWithStatus(http.StatusInternalServerError)
 	}

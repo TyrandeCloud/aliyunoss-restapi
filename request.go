@@ -72,14 +72,14 @@ type Request struct {
 	isProxy bool
 	// Only when the isProxy is ModelProxy, then opt should be set.
 	// Otherwise, there is no need to specify it.
-	opt Option
+	opt *Option
 }
 
 func (r *Request) SetModel(bo bool) {
 	r.isProxy = bo
 }
 
-func (r *Request) SetOption(opt Option) {
+func (r *Request) SetOption(opt *Option) {
 	r.opt = opt
 }
 
@@ -302,9 +302,10 @@ func (r *Request) Upload() error {
 			BucketName:      r.bucketName,
 			Namespace:       r.namespace,
 			Channel:         r.channel,
-			Filename:        r.resource,
+			Filename:        r.resourceName,
 		}
-		resp, err := http.NewRequest("GET", fmt.Sprintf("%s/get?%s", r.opt.BaseUrl, params.ToUrlParams()), r.body)
+		url := fmt.Sprintf("%s/upload?%s", r.opt.BaseUrl, params.ToUrlParams())
+		resp, err := http.Post(url, "multipart/form-data", r.body)
 		if err != nil {
 			return err
 		}
@@ -329,9 +330,9 @@ func (r *Request) Download() (io.ReadCloser, error) {
 			BucketName:      r.bucketName,
 			Namespace:       r.namespace,
 			Channel:         r.channel,
-			Filename:        r.resource,
+			Filename:        r.resourceName,
 		}
-		resp, err := http.NewRequest("GET", fmt.Sprintf("%s/upload?%s", r.opt.BaseUrl, params.ToUrlParams()), r.body)
+		resp, err := http.Get(fmt.Sprintf("%s/get?%s", r.opt.BaseUrl, params.ToUrlParams()))
 		if err != nil {
 			return nil, err
 		}

@@ -81,7 +81,7 @@ func (a *RestOssClient) Verb(verb string) *Request {
 	r := NewRequest(a).Verb(verb)
 	if a.option.BaseUrl != "" {
 		r.SetModel(ModelProxy)
-		r.SetOption(r.opt)
+		r.SetOption(a.option)
 	}
 	return r
 }
